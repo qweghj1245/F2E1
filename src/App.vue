@@ -1,29 +1,45 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
+    <router-view style="margin-top:auto"/>
+    <div class="footer">POMODORO</div>
   </div>
 </template>
 
+<script>
+
+export default {};
+</script>
+
 <style lang="scss">
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-#nav {
-  padding: 30px;
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-    &.router-link-exact-active {
-      color: #42b983;
+@import './assets/icomoon/style.css';
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  #app {
+    min-width: 1280px;
+    margin: 0 auto;
+    background-color: #ffe9dc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    .footer {
+      background-color: #F25044;
+      font-size: 24px;
+      font-weight: bold;
+      color: #FFE9DC;
+      width: 100%;
+      text-align: center;
+      height: 35px;
+      line-height: 35px;
+      margin-top: auto;
     }
   }
-}
 </style>
