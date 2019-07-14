@@ -143,10 +143,14 @@ export default {
         case 'in':
           this.stop = 0;
           this.momentDuration();
-          this.playMusic(this.isPlaying);
+          if (this.isPlaying) {
+            this.playMusic(this.isPlaying);
+          }
           break;
         case 'out':
-          this.playMusic(this.isPlaying);
+          if (this.isPlaying) {
+            this.playMusic(this.isPlaying);
+          }
           localStorage.clear();           
           localStorage.setItem('times', JSON.stringify(this.times));
           this.clear();
