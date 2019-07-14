@@ -19,6 +19,7 @@ export default {};
   }
   * {
     box-sizing: border-box;
+    font-family: Segoe UI;
   }
   #app {
     min-width: 1280px;

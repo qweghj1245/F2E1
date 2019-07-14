@@ -7,19 +7,23 @@
           <div @click="isSong = 'none'">
             <span :class="{'span-active': isSong === 'none'}"></span>
           NONE</div>
-          <div @click="isSong = 'ring'">
+          <div @click="playMusic('#audio1')">
+            <audio :src="soundTink" id="audio1"></audio>
             <span :class="{'span-active': isSong === 'ring'}"></span>RING
           </div>
-          <div @click="isSong = 'beep'">
+          <div @click="playMusic('#audio2')">
+            <audio :src="soundBoom" id="audio2"></audio>
             <span :class="{'span-active': isSong === 'beep'}"></span>BEEP
           </div>
-          <div @click="isSong = 'chicken'">
+          <div @click="playMusic('#audio3')">
+            <audio :src="soundClap" id="audio3"></audio>
             <span :class="{'span-active': isSong === 'chicken'}"></span>CHICKEN
           </div>
         </div>
       </div>
       <div class="tomato-chart">
-        <bar-chart :width="200" :height="290" style="margin-top:70px"></bar-chart>
+        <bar-chart :width="200" :height="290" :week="weekDate()" :today="todays"
+        style="margin-top:70px"></bar-chart>
       </div>
     </section>
     <section id="tomato-center">
@@ -47,12 +51,15 @@
       <div class="tomato-list">
         <div>TO-DO LIST</div>
         <div>
-          <input type="text" v-model="listInput" />
-          <div @click="addList">＋</div>
+          <form action @submit="addList">
+            <input type="text" v-model="listInput"/>
+            <div @click="addList">＋</div>
+          </form>
         </div>
         <div class="list-wrap">
           <div v-for="(item, index) in listStorage" :key="index">
-            <div>{{item.text}}</div>
+            <div @dblclick="isEdit = true" v-show="!isEdit">{{item.text}}</div>
+            <input type="text" v-model="item.text" v-show="isEdit" @keydown="enterEdit($event)">
             <div :class="item.status === 'never' ? 'pt-28' : ''" @click="chooseType(item)">
               <i class="icon-check" v-show="item.status === 'isDone'"></i>
               <i class="icon-cancel" v-show="item.status === 'isFail'"></i>
@@ -67,9 +74,13 @@
 <script>
 import Vue from 'vue';
 import { Bar } from 'vue-chartjs';
+import moment from 'moment';
 import play from '../assets/icon_play.svg';
 import close from '../assets/icon_close.svg';
 import pause from '../assets/icon_pause.svg';
+import tink from '../assets/sounds/tink.wav';
+import boom from '../assets/sounds/boom.wav';
+import clap from '../assets/sounds/clap.wav';
 
 let interval;
 
@@ -77,6 +88,9 @@ export default {
   data() {
     return {
       closeBtn: close,
+      soundTink: tink,
+      soundBoom: boom,
+      soundClap: clap,
       isStart: false,
       listInput: '',
       listStorage: [],
@@ -88,9 +102,31 @@ export default {
       stop: 0,
       obj: {},
       isSong: 'none',
+      isPlaying: '',
+      isEdit: false,
     };
   },
   methods: {
+    playMusic(t) {
+      this.isPlaying = t;
+      const audio = document.querySelector(t);
+      switch (t) {
+        case '#audio1':
+          this.isSong = 'ring';
+          audio.play();
+          break;
+        case '#audio2':
+          this.isSong = 'beep';
+          audio.play();
+          break;
+        case '#audio3':
+          this.isSong = 'chicken';
+          audio.play();
+          break;
+        default:
+          break;
+      }
+    },
     chooseType(s) {
       if (s.status === 'never' || s.status === 'isFail') {
         /* eslint-disable */
@@ -107,8 +143,10 @@ export default {
         case 'in':
           this.stop = 0;
           this.momentDuration();
+          this.playMusic(this.isPlaying);
           break;
         case 'out':
+          this.playMusic(this.isPlaying);
           localStorage.clear();           
           localStorage.setItem('times', JSON.stringify(this.times));
           this.clear();
@@ -117,6 +155,7 @@ export default {
       }
     },
     addList() {
+      if (this.listInput === '') return;
       this.listStorage.push({ text: this.listInput, status: 'never' });
       this.listInput = '';
     },
@@ -128,31 +167,37 @@ export default {
         let time = JSON.parse(local);
         min = time.minutes;
         sec = time.seconds;  
-      } else {
-        min = 25;
-        sec = 60;
       }
+
       interval = setInterval(() => {
+
+        // 清除跟初始值
         if (this.stop > 0) {
           this.clear();
           return;
+        } else if (this.local > 0) {
+          min = 25;
+          sec = 0;
         }
-        sec = sec < 10 ? '0' + sec : sec;
-        min = min < 10 ? '0' + min : min;
-        min === 25 ? min-- : '';
-        if (sec <= 0) {
-          min--;
-          sec = 60;
-        }
-        if (min === 0 & sec === 0) {
-          this.clear();
-          return;
-        }
-        if (this.local > 0) {
-          min = 24;
-          sec = 60;
-        }
+        // 倒數
+        min === 1 ? min-- : '';
         sec--;
+        if (min === 0 && sec < 0) {
+          this.isStart = false;
+          this.clear();
+          min = 25;
+          sec = 0;
+          let times = {};
+          times.minutes = min;
+          times.seconds = sec;
+          localStorage.setItem('times', JSON.stringify(times))
+        } else if (min !== 0 && sec <= 0) {
+          min--;
+          sec = 59;
+        }
+
+        // 補零 和 資料值
+        sec = sec < 10 ? '0' + sec : sec;
         this.times.minutes = min;
         this.times.seconds = sec;
         this.local = 0;
@@ -169,6 +214,25 @@ export default {
       this.times.seconds = '00';  
       this.clear();
     },
+    weekDate() {
+      let currentDate = new Date(Date.now());
+      let timesStamp = currentDate.getTime();
+      let currenDay = currentDate.getDay();
+      let dates = [];
+      for (var i = 0; i < 7; i++) {
+        dates.push(new Date(timesStamp + 24 * 60 * 60 * 1000 * (i - (currenDay + 6) % 7)).toLocaleDateString().replace(/\//g, '-'));
+      }
+      
+      let newDates = dates.map(i => {
+        return i.split('-').splice(1).join('/');
+      });
+      return newDates;
+    },
+    enterEdit(e) {
+      if (e.keyCode === 13) {
+        this.isEdit = false;
+      }
+    },
   },
   computed: {
     statusButton() {
@@ -179,6 +243,9 @@ export default {
         return i.status === 'isDone';
       }).length;
     },
+    todays() {
+      return moment(Date.now()).format('MM-DD').split('-').join('/');
+    },
   },
   mounted() {
     this.resetTiming();  
@@ -187,6 +254,9 @@ export default {
 Vue.component('bar-chart', {
   extends: Bar,
   props: {
+    week: {
+      type: Array,
+    },
     today: {
       type: String,
     },
@@ -223,7 +293,6 @@ Vue.component('bar-chart', {
                 display: false,
                 color: '#707070',
                 width: 10,
-                // lineWidth: 4,
               },
             },
           ],
@@ -236,7 +305,6 @@ Vue.component('bar-chart', {
               gridLines: {
                 display: false,
                 color: '#707070',
-                // lineWidth: 4,
                 offsetGridLines: true,
               },
               barPercentage: 0.5,
@@ -251,8 +319,14 @@ Vue.component('bar-chart', {
       },
     };
   },
+  computed: {
+    noZeroToday() {
+      return this.today.split('')[0] === '0' ? this.today.substring(1) : this.today;
+    },
+  },
   created() {
-    const index = this.datacollection.labels.findIndex(item => item === '7/3');
+    this.datacollection.labels = this.week;
+    const index = this.datacollection.labels.findIndex(item => item === this.noZeroToday);
     if (index) {
       this.datacollection.datasets[0].backgroundColor.forEach((item, j, arr) => {
         if (index === j) {
@@ -428,23 +502,25 @@ $red: #b72212;
         position: relative;
         margin-bottom: 15px;
         width: 328px;
-        & > input {
-          @include size(328px, 48px);
-          border: solid 1px $gray;
-          border-radius: 15px;
-          font-size: 24px;
-          padding: 12.75px 14.8px;
-          &:focus {
-            outline: none;
+        & > form {
+          & > input {
+            @include size(328px, 48px);
+            border: solid 1px $gray;
+            border-radius: 15px;
+            font-size: 24px;
+            padding: 12.75px 14.8px;
+            &:focus {
+              outline: none;
+            }
           }
-        }
-        & > div:nth-child(2) {
-          @include abs(50%, 92.2%);
-          font-size: 34px;
-          color: $gray;
-          cursor: pointer;
-          &:active {
-            transform: translate(-50%, -50%) scale(0.7);
+          & > div:nth-child(2) {
+            @include abs(50%, 92.2%);
+            font-size: 34px;
+            color: $gray;
+            cursor: pointer;
+            &:active {
+              transform: translate(-50%, -50%) scale(0.7);
+            }
           }
         }
       }
@@ -481,6 +557,18 @@ $red: #b72212;
             color: $black-2;
             font-style: oblique;
           }
+          & > input:nth-child(2) {
+            padding: 0 11.5px 7px 11.5px;
+            border: 0;
+            border-bottom: solid 1px $gray;
+            width: 265px;
+            font-size: 20px;
+            color: $black-2;
+            font-style: oblique;
+            &:focus {
+              outline: 0;
+            }
+          }
           .pt-28 {
             padding-top: 28px !important;
           }
@@ -501,7 +589,7 @@ $red: #b72212;
     position: relative;
     width: calc(100% / 3);
     .tomato-bridge {
-      @include size(579.43px, 418.81px);
+      @include size(579.43px, 421px);
       @include bg("../assets/tomato_center.svg");
       @include abs(48.3%, 50%);
       margin: 0 auto;
