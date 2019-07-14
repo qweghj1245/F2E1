@@ -4,7 +4,7 @@
       <div class="tomato-image">
         <div class="sound-block">
           <div>RINTONES</div>
-          <div @click="isSong = 'none'">
+          <div @click="playMusic('none')">
             <span :class="{'span-active': isSong === 'none'}"></span>
           NONE</div>
           <div @click="playMusic('#audio1')">
@@ -30,7 +30,7 @@
       <div class="tomato-bridge">
         <div>
           <img :src="closeBtn" v-show="!isStart" @click="resetTiming" />
-          <div>{{times.minutes}}:{{times.seconds}}</div>
+          <div :class="isRelax ? 'relax' : ''">{{times.minutes}}:{{times.seconds}}</div>
           <img :src="statusButton" @click="statusClick" alt />
         </div>
       </div>
@@ -104,12 +104,17 @@ export default {
       isSong: 'none',
       isPlaying: '',
       isEdit: false,
+      isRelax: undefined,
     };
   },
   methods: {
     playMusic(t) {
       this.isPlaying = t;
       const audio = document.querySelector(t);
+      if (t === 'none') {
+        this.isSong = 'none';
+        return;
+      }
       switch (t) {
         case '#audio1':
           this.isSong = 'ring';
@@ -167,8 +172,8 @@ export default {
       let local = localStorage.getItem('times');
       let min;
       let sec;
+      let time = JSON.parse(local);
       if (local !== null) {
-        let time = JSON.parse(local);
         min = time.minutes;
         sec = time.seconds;  
       }
@@ -189,11 +194,17 @@ export default {
         if (min === 0 && sec < 0) {
           this.isStart = false;
           this.clear();
-          min = 25;
+          min = 5;
           sec = 0;
           let times = {};
           times.minutes = min;
           times.seconds = sec;
+          if (times.relax) {
+            times.relax = false;
+          } else {
+            times.relax = true;
+            this.isRelax = times.relax;
+          }
           localStorage.setItem('times', JSON.stringify(times))
         } else if (min !== 0 && sec <= 0) {
           min--;
@@ -212,7 +223,8 @@ export default {
       clearInterval(interval);
     },
     resetTiming() {
-      localStorage.clear();  
+      localStorage.clear(); 
+      this.isRelax = false; 
       this.local++;
       this.times.minutes = '25';
       this.times.seconds = '00';  
@@ -280,7 +292,7 @@ Vue.component('bar-chart', {
         datasets: [
           {
             label: 'Data One',
-            backgroundColor: ['#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF', '#FFFFFF'],
+            backgroundColor: ['#ffe9dc', '#ffe9dc', '#ffe9dc', '#ffe9dc', '#ffe9dc', '#ffe9dc', '#ffe9dc'],
             data: [10, 20, 15, 5, 15, 25, 10],
           },
         ],
@@ -354,6 +366,7 @@ $black-2: #494949;
 $gray: #707070;
 $pink: #ffe9dc;
 $red: #b72212;
+$green: #407B4B;
 
 @mixin size($w, $h) {
   width: $w;
@@ -448,7 +461,7 @@ $red: #b72212;
         margin: 106px auto 0 auto;
         text-align: center;
         font-weight: bold;
-        color: $white;
+        color: $pink;
         & > div:nth-child(1) {
           font-size: 32px;
           margin-bottom: 7px;
@@ -613,6 +626,9 @@ $red: #b72212;
         & > img:first-child {
           position: absolute;
           top: -20px;
+        }
+        .relax {
+          color: $green !important;
         }
         & > div:nth-child(2) {
           font-size: 76px;
