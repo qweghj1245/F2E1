@@ -51,9 +51,9 @@
       <div class="tomato-list">
         <div>TO-DO LIST</div>
         <div>
-          <form action @submit="addList">
+          <form action @submit.prevent="addList">
             <input type="text" v-model="listInput"/>
-            <div @click="addList">＋</div>
+            <div @click.prevent="addList">＋</div>
           </form>
         </div>
         <div class="list-wrap">
